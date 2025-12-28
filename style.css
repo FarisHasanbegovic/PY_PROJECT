@@ -104,7 +104,7 @@ textarea::placeholder {
     color: #adb5bd;
 }
 
-/* Button */
+/* Button - FIXED VERSION */
 button {
     margin-top: 20px;
     padding: 18px 36px;
@@ -124,31 +124,22 @@ button {
 button:hover {
     transform: translateY(-3px);
     box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+    background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
 }
 
 button:active {
     transform: translateY(-1px);
 }
 
-button::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
-    opacity: 0;
-    transition: opacity 0.3s ease;
-}
-
-button:hover::after {
-    opacity: 1;
-}
-
 button span {
     position: relative;
     z-index: 1;
+    display: inline-block;
+    transition: transform 0.2s ease;
+}
+
+button:hover span {
+    transform: scale(1.05);
 }
 
 /* Loading indicator */

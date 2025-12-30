@@ -1,53 +1,58 @@
 let pyodide = null;
-let model = null; // We'll store the loaded model here
+let modelLoaded = false;
 
 async function loadPython() {
-    pyodide = await loadPyodide();
-    console.log("Pyodide loaded");
+    try {
+        pyodide = await loadPyodide();
+        console.log("Pyodide loaded");
 
-    // Load necessary packages
-    await pyodide.loadPackage(["micropip"]);
-    
-    // Install joblib
-    await pyodide.runPythonAsync(`
+        // Load necessary packages
+        await pyodide.loadPackage(["micropip"]);
+        
+        // Install joblib
+        await pyodide.runPythonAsync(`
 import micropip
 await micropip.install('joblib')
+await micropip.install('scikit-learn')
 print("Joblib installed")
 `);
-    
-    // Load your model
-    await loadModel();
+        
+        await loadModel();
+        
+    } catch (error) {
+        console.error("Failed to load Python:", error);
+    }
 }
 
 async function loadModel() {
     try {
-        // First, download your model file
-        // ⚠️ IMPORTANT: Replace this URL with your GitHub raw URL!
-        const MODEL_URL = "https://raw.githubusercontent.com/FarisHasanbegovic/PY_PROJECT/main/Spam_Detection.joblib";
         
-        console.log("Downloading model...");
-        const response = await fetch(MODEL_URL);
-        const modelData = await response.arrayBuffer();
         
         // Save to Pyodide's filesystem
-        pyodide.FS.writeFile('/Spam_Detection.joblib', new Uint8Array(modelData));
+        pyodide.FS.writeFile('./Spam_Detection.joblib', new Uint8Array(modelData));
         console.log("Model saved to filesystem");
         
-        // Load the model using joblib
+        // ✅ FIXED: Actually load the model!
         await pyodide.runPythonAsync(`
 import joblib
 
-# Load your model - EXACTLY what your friend said!
-model = joblib.load('/Spam_Detection.joblib')
-print("Model loaded successfully!")
-print(f"Model type: {type(model)}")
+# Load the model
+model = joblib.load('./Spam_Detection.joblib')
+print("✅ Model loaded successfully!")
+
+# Create prediction function
+def predict_sms(text):
+    result = model.predict([text])[0]
+    # Convert to spam/ham
+    return "spam" if result  else "ham"
 `);
         
-        console.log("✅ Model loaded!");
+        modelLoaded = true;
+        console.log("✅ Model setup complete!");
         
     } catch (error) {
-        console.error("Failed to load model:", error);
-        // Fall back to simple detection
+        console.error("❌ Failed to load model:", error);
+        modelLoaded = false;
         setupFallback();
     }
 }
@@ -63,6 +68,7 @@ def predict_sms(text):
 `);
 }
 
+// Start loading
 loadPython();
 
 const button = document.getElementById("checkBtn");
@@ -84,32 +90,18 @@ button.addEventListener("click", async () => {
         return;
     }
 
-    // Use the loaded model to predict
     try {
+        result.textContent = "🤖 Analyzing...";
+        result.style.color = "gray";
+        
+        // ✅ SIMPLIFIED: Just call the predict_sms function
         const prediction = pyodide.runPython(`
-import joblib
-
-# Load model if not already loaded
-try:
-    model
-except NameError:
-    model = joblib.load('/Spam_Detection.joblib')
-
-# Make prediction
-text = """${text.replace(/"/g, '\\"')}"""
-result = model.predict([text])[0]
-
-# Convert to string if needed
-if isinstance(result, (int, float)):
-    if result == 1:
-        "spam"
-    else:
-        "ham"
-else:
-    str(result).lower()
+predict_sms("""${text.replace(/"/g, '\\"')}""")
 `);
-
-        if (prediction === "spam" || prediction === "1") {
+        
+        console.log("Prediction result:", prediction);
+        
+        if (prediction === "spam") {
             result.textContent = "Prediction: SPAM ❌";
             result.style.color = "red";
         } else {
@@ -119,17 +111,19 @@ else:
         
     } catch (error) {
         console.error("Prediction error:", error);
-        // Fallback to simple detection
-        const fallbackPrediction = pyodide.runPython(`
-predict_sms("""${text}""")
-`);
-        
-        if (fallbackPrediction === "spam") {
-            result.textContent = "Prediction: SPAM ❌ (fallback)";
-            result.style.color = "red";
-        } else {
-            result.textContent = "Prediction: HAM ✅ (fallback)";
-            result.style.color = "green";
-        }
+        result.textContent = "Error analyzing message";
+        result.style.color = "orange";
     }
+});
+
+// Add loading state to button
+button.addEventListener('click', function() {
+    const originalText = button.textContent;
+    button.textContent = "Analyzing...";
+    button.disabled = true;
+    
+    setTimeout(() => {
+        button.textContent = originalText;
+        button.disabled = false;
+    }, 1500);
 });

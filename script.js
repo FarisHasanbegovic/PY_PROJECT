@@ -1,76 +1,63 @@
 let pyodide = null;
-let modelLoaded = false;
+let pythonReady = false;
 
-async function loadPython() {
-    try {
-        pyodide = await loadPyodide();
-        console.log("Pyodide loaded");
+// Load Pyodide and Python environment
+async function initPyodide() {
+    console.log("⏳ Loading Pyodide...");
 
-        // Load necessary packages
-        await pyodide.loadPackage(["micropip"]);
-        
-        // Install joblib
-        await pyodide.runPythonAsync(`
+    pyodide = await loadPyodide();
+    console.log("✅ Pyodide loaded");
+
+    await pyodide.loadPackage("micropip");
+
+    console.log("⏳ Installing Python packages...");
+    await pyodide.runPythonAsync(`
 import micropip
-await micropip.install('joblib')
-await micropip.install('scikit-learn')
-print("Joblib installed")
-`);
-        
-        await loadModel();
-        
-    } catch (error) {
-        console.error("Failed to load Python:", error);
-    }
+await micropip.install("joblib")
+await micropip.install("scikit-learn")
+    `);
+
+    console.log("✅ Python packages installed");
+
+    await loadModel();
 }
 
+// Load ML model
 async function loadModel() {
-    try {
-        
-        
-        // Save to Pyodide's filesystem
-        pyodide.FS.writeFile('./Spam_Detection.joblib', new Uint8Array(modelData));
-        console.log("Model saved to filesystem");
-        
-        // ✅ FIXED: Actually load the model!
-        await pyodide.runPythonAsync(`
+    console.log("⏳ Fetching ML model...");
+
+    const response = await fetch("Spam_Detection.joblib");
+    if (!response.ok) {
+        throw new Error("Model file not found");
+    }
+
+    const buffer = await response.arrayBuffer();
+    pyodide.FS.writeFile(
+        "Spam_Detection.joblib",
+        new Uint8Array(buffer)
+    );
+
+    console.log("✅ Model file written to Pyodide FS");
+
+    await pyodide.runPythonAsync(`
 import joblib
 
-# Load the model
-model = joblib.load('./Spam_Detection.joblib')
-print("✅ Model loaded successfully!")
+model = joblib.load("Spam_Detection.joblib")
+print("✅ MODEL LOADED:", type(model))
 
-# Create prediction function
 def predict_sms(text):
-    result = model.predict([text])[0]
-    # Convert to spam/ham
-    return "spam" if result  else "ham"
-`);
-        
-        modelLoaded = true;
-        console.log("✅ Model setup complete!");
-        
-    } catch (error) {
-        console.error("❌ Failed to load model:", error);
-        modelLoaded = false;
-        setupFallback();
-    }
+    pred = model.predict([text])[0]
+    return "spam" if pred else "ham"
+    `);
+
+    pythonReady = true;
+    console.log("🚀 ML model ready");
 }
 
-function setupFallback() {
-    console.log("Using fallback detection");
-    pyodide.runPython(`
-def predict_sms(text):
-    text = text.lower()
-    if "free" in text or "win" in text or "money" in text:
-        return "spam"
-    return "ham"
-`);
-}
+// Start everything
+initPyodide();
 
-// Start loading
-loadPython();
-
+// UI logic
 const button = document.getElementById("checkBtn");
 const input = document.getElementById("smsInput");
 const result = document.getElementById("result");
@@ -78,52 +65,30 @@ const result = document.getElementById("result");
 button.addEventListener("click", async () => {
     const text = input.value.trim();
 
-    if (text === "") {
+    if (!text) {
         result.textContent = "Please enter a message.";
-        result.style.color = "orange";
         return;
     }
 
-    if (!pyodide) {
-        result.textContent = "Python is still loading...";
-        result.style.color = "blue";
+    if (!pythonReady) {
+        result.textContent = "Model is still loading...";
         return;
     }
+
+    result.textContent = "Analyzing...";
 
     try {
-        result.textContent = "🤖 Analyzing...";
-        result.style.color = "gray";
-        
-        // ✅ SIMPLIFIED: Just call the predict_sms function
-        const prediction = pyodide.runPython(`
-predict_sms("""${text.replace(/"/g, '\\"')}""")
-`);
-        
-        console.log("Prediction result:", prediction);
-        
+        const prediction = await pyodide.runPythonAsync(
+            `predict_sms("""${text.replace(/"/g, '\\"')}""")`
+        );
+
         if (prediction === "spam") {
             result.textContent = "Prediction: SPAM ❌";
-            result.style.color = "red";
         } else {
             result.textContent = "Prediction: HAM ✅";
-            result.style.color = "green";
         }
-        
-    } catch (error) {
-        console.error("Prediction error:", error);
-        result.textContent = "Error analyzing message";
-        result.style.color = "orange";
+    } catch (err) {
+        console.error(err);
+        result.textContent = "Prediction error";
     }
-});
-
-// Add loading state to button
-button.addEventListener('click', function() {
-    const originalText = button.textContent;
-    button.textContent = "Analyzing...";
-    button.disabled = true;
-    
-    setTimeout(() => {
-        button.textContent = originalText;
-        button.disabled = false;
-    }, 1500);
 });

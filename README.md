@@ -68,4 +68,71 @@ The trained model is saved as `Spam_Detection.joblib` using the **Joblib** libra
 
 The trained `Spam_Detection.joblib` model is loaded directly in the browser, allowing for real-time classification without any server-side processing.
 
+---
 
+## ⚙️ Demo
+
+The SMS Spam Detector uses a trained machine learning model to classify messages in real-time. Follow the steps below to test it yourself.
+
+---
+
+### Step 1: Open the Application
+
+Open the SMS Spam Detector in your browser.
+
+![Homepage](images/SMS_Spam_homepage.png)
+
+---
+
+### Step 2: Choose a Message to Test
+
+Not sure what to type? Here are some examples you can copy and paste.
+
+#### 📩 Spam Message Examples
+
+These are unsolicited or suspicious messages that the model should flag as **Spam**:
+
+| # | Example Message |
+|---|-----------------|
+| 1 | `CONGRATULATIONS! You've won a free iPhone. Click here to claim your prize now.` |
+| 2 | `URGENT: Your bank account has been compromised. Verify your details immediately at bit.ly/verify-now` |
+| 3 | `CLAIM YOUR PRIZE: You are the lucky winner of our monthly draw. Send us your details to collect.` |
+| 4 | `You have been selected for an exclusive offer. Reply YES to receive your $500 gift card.` |
+| 5 | `Your Netflix subscription has expired. Update your payment info now to avoid suspension.` |
+
+#### ✅ Ham (Legitimate) Message Examples
+
+These are normal, everyday messages that the model should flag as **Ham**:
+
+| # | Example Message |
+|---|-----------------|
+| 1 | `Hey, are we still meeting for coffee tomorrow at 3pm?` |
+| 2 | `Don't forget to bring the textbook to class tomorrow.` |
+| 3 | `Can you send me the notes from yesterday's lecture?` |
+| 4 | `I'll be home around 6pm. Do you need anything from the store?` |
+| 5 | `Happy birthday! Hope you have an amazing day.` |
+
+---
+### Spam Results
+
+![Homepage](images/SMS_Spam_SPAM_message.png)
+
+---
+
+### Ham Results
+
+![Homepage](images/SMS_Spam_HAM_message.png)
+
+---
+
+### ⚠️ Disclaimer
+
+This project was built as a university course project to demonstrate machine learning concepts in a browser-based environment. While the model performs well on test data, it is **not production-grade** and may misclassify certain messages.
+
+Factors that can affect accuracy include:
+
+- Unusual message formatting or slang
+- Messages that are very short or contain only numbers
+- New spam patterns the model hasn't seen before
+
+The purpose of this project is educational — to show how a trained model can be deployed in the browser using Pyodide, not to serve as a reliable spam filter for real-world use.

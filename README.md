@@ -32,6 +32,33 @@ The application provides a simple interface where users can:
 
 ---
 
+## 📊 Model & Dataset
+
+### Dataset
+
+The model was trained on the **SMS Spam Collection** dataset, a publicly available dataset commonly used for spam detection research. It contains over 5,500 SMS messages, each labeled as either:
+
+- **Spam** — Unwanted or unsolicited messages
+- **Ham** — Legitimate messages
+
+The dataset provides a realistic mix of message types, making it suitable for training a classification model.
+
+### Model Training
+
+The classification model was built using **scikit-learn**, a popular machine learning library for Python. Key steps in the training process included:
+
+1. **Text Preprocessing** — Converting raw SMS text into numerical features using techniques like TF-IDF vectorization
+2. **Model Selection** — Training and evaluating multiple classifiers to find the best performing one
+3. **Hyperparameter Tuning** — Optimizing model parameters for better accuracy
+
+---
+
+### Model File
+
+The trained model is saved as `Spam_Detection.joblib` using the **Joblib** library. This file is loaded directly in the browser via Pyodide, allowing for real-time classification without any server-side processing.
+
+---
+
 ## ⚙️ How It Works
 
 1. User enters an SMS message into the input field
